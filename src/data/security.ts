@@ -1,0 +1,146 @@
+import type { SecurityItem, IAMSummary } from '../types/cloud';
+
+export const securityItems: SecurityItem[] = [
+  {
+    id: 'iam',
+    title: 'IAM',
+    description: 'Gestión de identidades y accesos',
+    status: 'good',
+    score: 92,
+    details: [
+      '24 usuarios configurados',
+      '12 roles activos',
+      '38 políticas aplicadas',
+      'Principio de mínimo privilegio activo',
+    ],
+    lastReview: '2024-10-01',
+  },
+  {
+    id: 'data-protection',
+    title: 'Protección de Datos',
+    description: 'Cifrado y gestión de datos sensibles',
+    status: 'good',
+    score: 98,
+    details: [
+      'S3: cifrado AES-256 activado',
+      'RDS: cifrado en reposo habilitado',
+      'KMS integrado',
+      'SSL/TLS forzado en todas las conexiones',
+    ],
+    lastReview: '2024-09-28',
+  },
+  {
+    id: 'mfa',
+    title: 'MFA',
+    description: 'Autenticación multifactor',
+    status: 'review',
+    score: 76,
+    details: [
+      '18 de 24 usuarios con MFA habilitado',
+      '6 usuarios pendientes de configurar',
+      'MFA obligatorio para root',
+      'Revisar cuentas sin MFA',
+    ],
+    lastReview: '2024-09-15',
+  },
+  {
+    id: 'firewall',
+    title: 'Firewall / WAF',
+    description: 'Web Application Firewall y grupos de seguridad',
+    status: 'good',
+    score: 95,
+    details: [
+      'AWS WAF activo en CloudFront',
+      '8 security groups configurados',
+      'Reglas de ingreso restrictivas',
+      'Logs habilitados en CloudTrail',
+    ],
+    lastReview: '2024-10-01',
+  },
+  {
+    id: 'backup',
+    title: 'Backup',
+    description: 'Respaldos y recuperación de desastres',
+    status: 'good',
+    score: 91,
+    details: [
+      'RDS: backups automáticos diarios',
+      'Retención de 30 días configurada',
+      'S3 Versioning habilitado',
+      'Prueba de restauración: 2024-09-20',
+    ],
+    lastReview: '2024-09-20',
+  },
+  {
+    id: 'compliance',
+    title: 'Cumplimiento',
+    description: 'Normativas y estándares de seguridad',
+    status: 'review',
+    score: 84,
+    details: [
+      'AWS Config habilitado',
+      '3 reglas de Config con advertencias',
+      'Security Hub activo',
+      'Revisión de GuardDuty pendiente',
+    ],
+    lastReview: '2024-09-10',
+  },
+  {
+    id: 'network-security',
+    title: 'Seguridad de Red',
+    description: 'VPC, NACLs y segmentación de red',
+    status: 'good',
+    score: 89,
+    details: [
+      'VPC con subredes públicas/privadas',
+      'Network ACLs configuradas',
+      'Internet Gateway protegido',
+      'VPN Site-to-Site activa',
+    ],
+    lastReview: '2024-09-25',
+  },
+  {
+    id: 'incident-response',
+    title: 'Respuesta a Incidentes',
+    description: 'Detección y respuesta a incidentes',
+    status: 'good',
+    score: 88,
+    details: [
+      'CloudTrail habilitado en todas las regiones',
+      'Alertas de CloudWatch configuradas',
+      'SNS para notificaciones críticas',
+      'Playbook de respuesta documentado',
+    ],
+    lastReview: '2024-09-30',
+  },
+];
+
+export const iamSummary: IAMSummary = {
+  users: 24,
+  roles: 12,
+  policies: 38,
+  mfaEnabled: 18,
+  mfaTotal: 24,
+  encryptedBuckets: 12,
+  totalBuckets: 12,
+  backupsConfigured: 8,
+  totalBackups: 9,
+};
+
+export const sharedResponsibilityModel = {
+  awsResponsibilities: [
+    'Infraestructura física (centros de datos)',
+    'Hardware de red y conectividad',
+    'Hipervisor y virtualización',
+    'Seguridad de servicios gestionados',
+    'Actualizaciones de infraestructura global',
+  ],
+  clientResponsibilities: [
+    'Configuración del sistema operativo',
+    'Gestión de aplicaciones y datos',
+    'Configuración de IAM y accesos',
+    'Cifrado de datos en reposo y tránsito',
+    'Gestión de firewall y grupos de seguridad',
+    'Actualizaciones de parches del cliente',
+  ],
+};
