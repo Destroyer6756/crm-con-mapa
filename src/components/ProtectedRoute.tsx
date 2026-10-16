@@ -29,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // 3. Requires Admin role
   if (requireAdmin && currentUser.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/erp-dashboard" replace />;
   }
 
   // 4. Requires specific module permission set by Admin

@@ -1,5 +1,5 @@
 // ============================================================
-// CloudOps Dashboard - TypeScript Interfaces & Types
+// ERP EnterpriseCloud — TypeScript Interfaces & Types
 // ============================================================
 
 export type RegionStatus = 'operational' | 'warning' | 'error';
@@ -91,7 +91,7 @@ export interface NetworkNode {
   icon: string;
 }
 
-// ── Cloud Proposal (Planning) ─────────────────────────────
+// ── Cloud Proposal (Legacy Planning) ──────────────────────
 export interface CloudProposal {
   id: string;
   name: string;
@@ -159,6 +159,16 @@ export interface UserPermissions {
   canViewSecurity: boolean;
   canViewNetwork: boolean;
   canViewServices: boolean;
+  // ERP modules
+  canViewSales: boolean;
+  canViewPurchases: boolean;
+  canViewInventory: boolean;
+  canViewCustomers: boolean;
+  canViewSuppliers: boolean;
+  canViewFinances: boolean;
+  canViewDocuments: boolean;
+  canViewAdministration: boolean;
+  canViewReports: boolean;
 }
 
 export interface UserAccount {
@@ -176,3 +186,274 @@ export interface UserAccount {
   permissions: UserPermissions;
 }
 
+// ============================================================
+// ERP MODULE TYPES
+// ============================================================
+
+// ── Customers ─────────────────────────────────────────────
+export interface Customer {
+  id: string;
+  code: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  country: string;
+  creditLimit: number;
+  balance: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  contactPerson?: string;
+  ruc?: string;
+}
+
+// ── Suppliers ─────────────────────────────────────────────
+export interface Supplier {
+  id: string;
+  code: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  country: string;
+  creditLimit: number;
+  balance: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  contactPerson?: string;
+  ruc?: string;
+  category: string;
+}
+
+// ── Products & Inventory ──────────────────────────────────
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+}
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  unitPrice: number;
+  purchasePrice: number;
+  stock: number;
+  minStock: number;
+  maxStock: number;
+  unit: string;
+  warehouseId: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  location: string;
+  capacity: number;
+  used: number;
+  status: 'active' | 'inactive';
+}
+
+export interface InventoryMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  type: 'entrada' | 'salida' | 'transferencia' | 'ajuste';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reference: string;
+  reason: string;
+  date: string;
+  userId: string;
+}
+
+// ── Sales ─────────────────────────────────────────────────
+export type SaleStatus = 'cotizacion' | 'pendiente' | 'confirmado' | 'entregado' | 'cancelado';
+
+export interface SaleDetail {
+  id: string;
+  saleId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  subtotal: number;
+}
+
+export interface Sale {
+  id: string;
+  code: string;
+  customerId: string;
+  customerName: string;
+  date: string;
+  dueDate: string;
+  status: SaleStatus;
+  details: SaleDetail[];
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  paid: number;
+  balance: number;
+  notes?: string;
+}
+
+// ── Purchases ─────────────────────────────────────────────
+export type PurchaseStatus = 'solicitud' | 'orden' | 'recibido' | 'facturado' | 'pagado' | 'cancelado';
+
+export interface PurchaseDetail {
+  id: string;
+  purchaseId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
+export interface Purchase {
+  id: string;
+  code: string;
+  supplierId: string;
+  supplierName: string;
+  date: string;
+  dueDate: string;
+  status: PurchaseStatus;
+  details: PurchaseDetail[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paid: number;
+  balance: number;
+  notes?: string;
+}
+
+// ── Finances ──────────────────────────────────────────────
+export type TransactionType = 'ingreso' | 'egreso';
+
+export interface FinanceTransaction {
+  id: string;
+  type: TransactionType;
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  reference: string;
+  account: string;
+  status: 'pendiente' | 'procesado' | 'anulado';
+}
+
+export interface BankAccount {
+  id: string;
+  name: string;
+  bank: string;
+  number: string;
+  type: 'corriente' | 'ahorros';
+  balance: number;
+  currency: string;
+}
+
+// ── Documents ─────────────────────────────────────────────
+export type DocumentType = 'factura' | 'contrato' | 'orden' | 'comprobante' | 'archivo';
+
+export interface ERPDocument {
+  id: string;
+  type: DocumentType;
+  name: string;
+  description: string;
+  entityType: 'cliente' | 'proveedor' | 'venta' | 'compra' | 'interno';
+  entityId: string;
+  entityName: string;
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  s3Key?: string;
+  tags: string[];
+}
+
+// ── Audit Log ─────────────────────────────────────────────
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  module: string;
+  entityId?: string;
+  entityType?: string;
+  description: string;
+  result: 'success' | 'failure';
+  ipAddress?: string;
+  timestamp: string;
+}
+
+// ============================================================
+// PLANNING & SECURITY SCORE TYPES
+// ============================================================
+
+export type PhaseStatus = 'pendiente' | 'en_progreso' | 'completada';
+
+export interface SecurityControl {
+  id: string;
+  name: string;
+  description: string;
+  implemented: boolean;
+  verificationDate?: string;
+  evidence?: string;
+  phaseReference: string; // Refers to FASE 8
+}
+
+export interface PhaseTask {
+  id: string;
+  phaseId: string;
+  name: string;
+  description: string;
+  status: PhaseStatus;
+  assignedModule?: string; // e.g. 'Administración', 'Backend'
+  securityControlId?: string; // linked security control (for FASE 8 tasks)
+  estimatedHours?: number;
+  completedAt?: string;
+}
+
+export interface ProjectPhase {
+  id: string;
+  number: number;
+  name: string;
+  description: string;
+  status: PhaseStatus;
+  progress: number; // 0-100
+  estimatedStart: string;
+  estimatedEnd: string;
+  actualStart?: string;
+  actualEnd?: string;
+  tasks: PhaseTask[];
+  relatedModule?: string;
+}
+
+export interface SecurityScore {
+  totalControls: number;
+  implementedControls: number;
+  percentage: number;
+  controls: SecurityControl[];
+  lastCalculated: string;
+}
+
+export interface PlanningProgress {
+  totalPhases: number;
+  completedPhases: number;
+  inProgressPhases: number;
+  pendingPhases: number;
+  percentage: number;
+  phases: ProjectPhase[];
+}

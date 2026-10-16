@@ -9,6 +9,36 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canViewSecurity: true,
   canViewNetwork: true,
   canViewServices: true,
+  // ERP modules
+  canViewSales: true,
+  canViewPurchases: true,
+  canViewInventory: true,
+  canViewCustomers: true,
+  canViewSuppliers: true,
+  canViewFinances: true,
+  canViewDocuments: true,
+  canViewAdministration: true,
+  canViewReports: true,
+};
+
+const USER_PERMISSIONS: UserPermissions = {
+  canViewDashboard: true,
+  canViewPlanning: true,
+  canViewCosts: true,
+  canViewInfrastructure: true,
+  canViewSecurity: true,
+  canViewNetwork: true,
+  canViewServices: true,
+  // ERP modules — restricted for regular users
+  canViewSales: true,
+  canViewPurchases: false,
+  canViewInventory: true,
+  canViewCustomers: true,
+  canViewSuppliers: false,
+  canViewFinances: false,
+  canViewDocuments: true,
+  canViewAdministration: false,
+  canViewReports: true,
 };
 
 const INITIAL_USERS: UserAccount[] = [
@@ -38,7 +68,7 @@ const INITIAL_USERS: UserAccount[] = [
     createdAt: '2026-02-01T14:30:00Z',
     approvedAt: '2026-02-01T15:00:00Z',
     approvedBy: 'admin@cloudops.com',
-    permissions: { ...DEFAULT_PERMISSIONS },
+    permissions: { ...USER_PERMISSIONS },
   },
   {
     id: 'usr-pending-1',
@@ -50,7 +80,7 @@ const INITIAL_USERS: UserAccount[] = [
     department: 'DevOps & CI/CD',
     reason: 'Despliegue y monitoreo de clústeres EKS en AWS',
     createdAt: '2026-10-01T09:15:00Z',
-    permissions: { ...DEFAULT_PERMISSIONS },
+    permissions: { ...USER_PERMISSIONS },
   },
   {
     id: 'usr-pending-2',
@@ -62,7 +92,7 @@ const INITIAL_USERS: UserAccount[] = [
     department: 'Finanzas Cloud',
     reason: 'Auditoría mensual de presupuestos y costos por región',
     createdAt: '2026-10-02T08:45:00Z',
-    permissions: { ...DEFAULT_PERMISSIONS },
+    permissions: { ...USER_PERMISSIONS },
   },
 ];
 
@@ -90,7 +120,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load stored users or fallback to INITIAL_USERS
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem('cloudops-users');
     if (saved) {
@@ -99,22 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_USERS;
   });
 
-  // Load current logged in user
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem('cloudops-current-user');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { console.error(e); }
     }
-    // Default logged in as Admin for instant preview if needed, or null to demand login
     return INITIAL_USERS[0];
   });
 
-  // Sync users to localStorage
   useEffect(() => {
     localStorage.setItem('cloudops-users', JSON.stringify(users));
   }, [users]);
 
-  // Sync current user state
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('cloudops-current-user', JSON.stringify(currentUser));
@@ -123,14 +148,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser]);
 
-  // Maintain fresh current user status if modified by admin
   useEffect(() => {
     if (currentUser) {
       const fresh = users.find((u) => u.id === currentUser.id);
-      if (fresh) {
-        if (fresh.status !== currentUser.status || fresh.role !== currentUser.role) {
-          setCurrentUser(fresh);
-        }
+      if (fresh && (fresh.status !== currentUser.status || fresh.role !== currentUser.role)) {
+        setCurrentUser(fresh);
       }
     }
   }, [users, currentUser]);
@@ -141,124 +163,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanEmail = email.trim().toLowerCase();
     const target = users.find((u) => u.email.toLowerCase() === cleanEmail);
 
-    if (!target) {
-      return { success: false, message: 'Usuario no encontrado. Verifica tu correo electrónico.' };
-    }
+    if (!target) return { success: false, message: 'Usuario no encontrado. Verifica tu correo electrónico.' };
+    if (target.passwordHash && target.passwordHash !== pass) return { success: false, message: 'Contraseña incorrecta.' };
+    if (target.status === 'pending') return { success: false, message: '⏳ Tu cuenta está pendiente de aprobación por el Administrador.' };
+    if (target.status === 'rejected') return { success: false, message: '❌ Tu solicitud de acceso fue rechazada por el Administrador.' };
+    if (target.status === 'blocked') return { success: false, message: '🚫 Tu cuenta ha sido bloqueada por el Administrador del sistema.' };
 
-    if (target.passwordHash && target.passwordHash !== pass) {
-      return { success: false, message: 'Contraseña incorrecta.' };
-    }
-
-    // CHECK APPROVAL STATUS!
-    if (target.status === 'pending') {
-      return {
-        success: false,
-        message: '⏳ Tu cuenta está pendiente de aprobación por el Administrador. Solo podrás ingresar una vez que el Administrador autorice tu acceso.',
-      };
-    }
-
-    if (target.status === 'rejected') {
-      return {
-        success: false,
-        message: '❌ Tu solicitud de acceso fue rechazada por el Administrador.',
-      };
-    }
-
-    if (target.status === 'blocked') {
-      return {
-        success: false,
-        message: '🚫 Tu cuenta ha sido bloqueada por el Administrador del sistema.',
-      };
-    }
-
-    // Status is 'approved'
     setCurrentUser(target);
-    return {
-      success: true,
-      message: `¡Bienvenido de nuevo, ${target.name}!`,
-      user: target,
-    };
+    return { success: true, message: `¡Bienvenido de nuevo, ${target.name}!`, user: target };
   };
 
-  const register = (
-    name: string,
-    email: string,
-    pass: string,
-    dept: string,
-    reason: string
-  ): AuthResult => {
+  const register = (name: string, email: string, pass: string, dept: string, reason: string): AuthResult => {
     const cleanEmail = email.trim().toLowerCase();
     if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
       return { success: false, message: 'El correo electrónico ya está registrado en el sistema.' };
     }
-
     const newUser: UserAccount = {
       id: `usr-${Date.now()}`,
       name: name.trim(),
       email: cleanEmail,
       passwordHash: pass,
       role: 'user',
-      status: 'pending', // MUST BE APPROVED BY ADMIN!
+      status: 'pending',
       department: dept.trim() || 'General',
-      reason: reason.trim() || 'Solicitud de acceso al Dashboard CloudOps',
+      reason: reason.trim() || 'Solicitud de acceso al ERP EnterpriseCloud',
       createdAt: new Date().toISOString(),
-      permissions: { ...DEFAULT_PERMISSIONS },
+      permissions: { ...USER_PERMISSIONS },
     };
-
     setUsers((prev) => [newUser, ...prev]);
-    return {
-      success: true,
-      message: '✅ Solicitud de acceso enviada con éxito. Tu cuenta debe ser APROBADA por el Administrador antes de que puedas ingresar.',
-    };
+    return { success: true, message: '✅ Solicitud enviada. El Administrador debe aprobar tu acceso.' };
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-  };
+  const logout = () => setCurrentUser(null);
 
   const approveUser = (userId: string) => {
     const now = new Date().toISOString();
     const adminEmail = currentUser?.email || 'admin@cloudops.com';
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, status: 'approved', approvedAt: now, approvedBy: adminEmail }
-          : u
-      )
-    );
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, status: 'approved', approvedAt: now, approvedBy: adminEmail } : u));
   };
 
   const rejectUser = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, status: 'rejected' } : u))
-    );
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, status: 'rejected' } : u));
   };
 
   const blockUser = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, status: u.status === 'blocked' ? 'approved' : 'blocked' }
-          : u
-      )
-    );
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, status: u.status === 'blocked' ? 'approved' : 'blocked' } : u));
   };
 
   const updateUserRole = (userId: string, role: UserRole) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role } : u))
-    );
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role } : u));
   };
 
   const updateUserPermissions = (userId: string, perms: Partial<UserPermissions>) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, permissions: { ...u.permissions, ...perms } }
-          : u
-      )
-    );
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, permissions: { ...u.permissions, ...perms } } : u));
   };
 
   const deleteUser = (userId: string) => {
@@ -266,22 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        users,
-        pendingCount,
-        login,
-        register,
-        logout,
-        approveUser,
-        rejectUser,
-        blockUser,
-        updateUserRole,
-        updateUserPermissions,
-        deleteUser,
-      }}
-    >
+    <AuthContext.Provider value={{ currentUser, users, pendingCount, login, register, logout, approveUser, rejectUser, blockUser, updateUserRole, updateUserPermissions, deleteUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -289,8 +231,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider');
-  }
+  if (!context) throw new Error('useAuth debe usarse dentro de un AuthProvider');
   return context;
 };
